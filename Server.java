@@ -1,26 +1,23 @@
 import java.io.*;
 import java.net.*;
-import java.util.StringTokenizer;
 import java.util.StringTokenizer; 
 import java.util.Random;
 import java.util.ArrayList;
-
 public class HttpServer{
-
+	
 	static int sessions = 0;
 	static boolean cookie = false, correct = false;
 	static ArrayList<Integer> guesses = new ArrayList<Integer>();
 	static int lowguess = 1, highguess = 100;
 	static String htmlAnswer = "";
-
 	public static void main(String[] args) throws IOException{
-
-
-
-
-
-
-
+		
+		
+		
+		
+		
+		
+		
 		//Att göra:
 		//Spara klients Session ID
 		//Hantera/ta ut gissning
@@ -28,10 +25,10 @@ public class HttpServer{
 		//metod för att sätta ihop html kod - se längst ner - plus att hantera intervall
 		//lösa sparning av gissningar
 		// Se till att flera klienter kan gissa samtidigt.
-
-
-
-
+		
+		
+		
+		
 		//sätt svar till ett random nummer
 		Random randomGenerator = new Random();
 		int randomNum = randomGenerator.nextInt(100)+1;
@@ -39,30 +36,32 @@ public class HttpServer{
 
 
 		System.out.println("Skapar Serversocket");
-		ServerSocket ss = new ServerSocket(8080);
 		ServerSocket ss = new ServerSocket(8180);
+		ServerSocket ss = new ServerSocket(8080);
 
 		while(true){
 			System.out.println("Väntar på klient...");
 			Socket s = ss.accept();
 			System.out.println("Klient är ansluten");
 			BufferedReader request = new BufferedReader(new InputStreamReader(s.getInputStream()));
-
+			
 			String str = request.readLine();
 			//printar request
-			System.out.println("str: " + str);
 			System.out.println(str);
-
+			
 			StringTokenizer tokens = new StringTokenizer(str," ?");
-			System.out.println(tokens.nextToken()); // Ordet GET
 			tokens.nextToken(); // Ordet GET
 
 			String requestedDocument = tokens.nextToken();
 			String guess = tokens.nextToken();
 			guess = guess.substring(6,guess.length());
-
 			System.out.println("guess: " + guess);
 			System.out.println("guess length: " + guess.length() );
+			char[] charGuess = guess.toCharArray();
+			int guessed = checkGuess(charGuess);
+			//guess = guess.substring(6,guess.length());
+			System.out.println("guess: " + guessed);
+			//System.out.println("guess length: " + guess.length() );
 
 			int interval = 0;
 //			boolean tooHigh = false, tooLow = false;
@@ -94,7 +93,6 @@ public class HttpServer{
 //			String answer = setAnswer(lowguess, highguess, correct, tooHigh, tooLow);
 //			
 			//skriver ut info om host
-			while( (str = request.readLine()) != null && str.length() > 0){
 			while( (str = request.readLine()) != null && str.length() > 0) {
 				System.out.println(str);
 				String tmp = str.substring(0, 6);
@@ -106,28 +104,32 @@ public class HttpServer{
 					cookie = true;
 				}
 			}
-
+			
 			System.out.println("Förfrågan klar.");
-@@ -44,19 +114,91 @@ public static void main(String[] args) throws IOException{
+			s.shutdownInput();
+			PrintStream response = new PrintStream(s.getOutputStream());
+			response.println("HTTP/1.1 200 OK");
+			response.println("Server : Slask 0.1 Beta");
+			
+			if(requestedDocument.indexOf(".html") != -1)
+				response.println("Content-Type: text/html");
+			
 			if(requestedDocument.indexOf(".gif") != -1)
 				response.println("Content-Type: image/gif");
-
-			response.println("Set-Cookie: clientId=1; expires=Wednesday,31-Dec-12 21:00:00 GMT");
 			String clientId = null;
 			if (!cookie) {
 				response.println("Set-Cookie: clientId="+setSessionId()+"; expires=Wednesday,31-Dec-15 21:00:00 GMT");
 			}
-
+			
 			response.println();
 			File f = new File("."+requestedDocument);
 			FileInputStream infil = new FileInputStream(f);
 			byte[] b = new byte[1024];
-
 			while( infil.available() > 0){
 				response.write(b,0,infil.read(b));
 				String debug = new String(b);
 				if (debug.equals("<split here>")) {
-
+					
 					if (guess.length() > 0) {
 						//response.println(answer);
 						System.out.println("Good for you.");
@@ -137,13 +139,11 @@ public class HttpServer{
 				}
 				//System.out.println(debug);
 			}
-			
-
 			s.shutdownOutput();
 			s.close();
 		}
 	}
-
+	
 	private synchronized static String setAnswer(int low, int high, boolean corr, boolean tooHigh, boolean tooLow) {
 		if (corr) { // Användaren har gissat korrekt.
 			return "Correct!";
@@ -154,12 +154,37 @@ public class HttpServer{
 			return "Too low! Guess again between "+low+" and " + high + "";
 		}
 	}
-
+	
 	private synchronized static int setSessionId() {
 		sessions++;
 		return sessions;
 	}
 
+	/*
+	 * Checks if the user has made a guess and
+	 * returns that guess.
+	 * 
+	 * @param: a char array of the potential guess-part
+	 * @return: the guessed integer or -1
+	 */
+	private static int checkGuess(char[] guess) {
+		char[] search = {'g','u','e','s','s'};
+		int j = 0;
+		for (int i = 0; i < guess.length; i++) {
+			if (guess[i] == search[j]) {
+				j++;
+				if (j >= search.length) {
+					String tmp = guess.toString();
+					tmp = tmp.substring(i+1, i+3); // Should include "XY"
+					int answer = (int)Integer.parseInt(tmp);
+					return answer;
+				}
+			} else {
+				j = 0;
+			}
+		}
+		return -1;
+	}
 //private class ClientHandler implements Runnable {
 //		
 //		BufferedReader indata;
@@ -201,5 +226,5 @@ public class HttpServer{
 //		}
 //		
 //	}
-
-} 
+	
+}
